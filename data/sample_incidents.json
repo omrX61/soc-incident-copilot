@@ -1,0 +1,158 @@
+[
+  {
+    "id": "INC-1042",
+    "title": "VIP mailbox AiTM phishing",
+    "severity": "High",
+    "mitre": "T1566.002, T1078",
+    "assets": "exec-assistant@corp.example, Entra ID tenant",
+    "iocs": [
+      "hxxps://login-microsoftonline-secure[.]com",
+      "ASN 14061 session after click",
+      "Inbox rule: 'If from CFO then delete'"
+    ],
+    "notes": "User clicked a DocuSign lure. Risk detection: unfamiliar properties + anonymous IP. Need token revoke and mailbox-rule hunt."
+  },
+  {
+    "id": "INC-1108",
+    "title": "Endpoint encryption on FILESRV01",
+    "severity": "Critical",
+    "mitre": "T1486, T1021.001, T1078",
+    "assets": "FILESRV01, jump host ADM-17, domain account svc-backup",
+    "iocs": [
+      "vssadmin delete shadows",
+      "ransom note README_FOR_DECRYPT.txt",
+      "RDP Type 10 from 10.20.5.17"
+    ],
+    "notes": "Mass file rename on finance share. Backup job failed 40 minutes earlier. Patient zero still unknown."
+  },
+  {
+    "id": "INC-0981",
+    "title": "PowerShell cradle from Excel add-in",
+    "severity": "Medium",
+    "mitre": "T1566.001, T1059.001, T1071.001",
+    "assets": "WS-FIN-014, user j.hale",
+    "iocs": [
+      "invoice_q3.xlsm",
+      "SHA256: sample-not-for-production",
+      "beacon to updates-cdn-check[.]net"
+    ],
+    "notes": "EDR prevented full payload. Need org-wide hash hunt and mail quarantine."
+  },
+  {
+    "id": "INC-1150",
+    "title": "Credential stuffing against VPN portal",
+    "severity": "Medium",
+    "mitre": "T1110.004, T1133",
+    "assets": "vpn.corp.example, 214 user accounts",
+    "iocs": [
+      "38 successful logins from 6 residential proxy ranges",
+      "user-agent: python-requests/2.x",
+      "login attempts spread across 03:00-05:00 UTC"
+    ],
+    "notes": "Leaked-credential list matched against breach corpus. No MFA enforced on legacy VPN group. Recommend forced password reset + MFA rollout."
+  },
+  {
+    "id": "INC-1163",
+    "title": "Misconfigured S3 bucket exposing customer exports",
+    "severity": "High",
+    "mitre": "T1530, T1567.002",
+    "assets": "s3://corp-reports-prod, IAM role data-export-lambda",
+    "iocs": [
+      "Bucket ACL changed to public-read on 2026-08-30",
+      "GetObject calls from unknown IP range 45.14.x.x",
+      "CloudTrail gap of 12 hours before discovery"
+    ],
+    "notes": "Discovered via external researcher disclosure. ~3,200 customer export files potentially accessed. Legal/notification review required."
+  },
+  {
+    "id": "INC-1177",
+    "title": "Malicious OAuth app granted mailbox scope",
+    "severity": "High",
+    "mitre": "T1528, T1114.002",
+    "assets": "Entra ID tenant, marketing team mailboxes (14 users)",
+    "iocs": [
+      "App name: 'QuickReports Sync'",
+      "Consent granted with Mail.Read, offline_access scopes",
+      "Refresh token used from 3 distinct ASNs post-grant"
+    ],
+    "notes": "User approved consent prompt from a phishing email disguised as a survey tool. App registration not verified publisher. Revoke consent, audit tenant-wide app grants."
+  },
+  {
+    "id": "INC-1189",
+    "title": "DNS tunneling exfiltration attempt",
+    "severity": "Medium",
+    "mitre": "T1071.004, T1041",
+    "assets": "WS-ENG-022, internal DNS resolver",
+    "iocs": [
+      "High-entropy subdomains to *.datax-relay[.]net",
+      "Average query size 180+ bytes, 900 queries/hour",
+      "Process: unsigned binary in %APPDATA%\\Local\\Temp"
+    ],
+    "notes": "Flagged by DNS analytics for volume anomaly. Endpoint isolated pending forensic image. Suspected staged exfil of source-control archive."
+  },
+  {
+    "id": "INC-1201",
+    "title": "Insider data exfiltration via personal cloud storage",
+    "severity": "High",
+    "mitre": "T1567.002, T1074.001",
+    "assets": "WS-SALES-009, user departing employee (resigned)",
+    "iocs": [
+      "42GB uploaded to personal Dropbox in final 48 hours",
+      "USB mass storage device connected twice prior",
+      "Customer contract folder accessed outside normal pattern"
+    ],
+    "notes": "Flagged by DLP after resignation notice. Legal and HR engaged. Need full activity timeline for last 30 days before offboarding completes."
+  },
+  {
+    "id": "INC-1214",
+    "title": "SQL injection on customer portal login",
+    "severity": "Critical",
+    "mitre": "T1190, T1505.003",
+    "assets": "portal.corp.example, backend DB db-prod-02",
+    "iocs": [
+      "UNION SELECT payloads in login POST body",
+      "Webshell dropped at /uploads/tmp_cfg.php",
+      "Outbound connection to 91.202.x.x on port 4444"
+    ],
+    "notes": "WAF rule bypass via encoded payload. Evidence of successful data dump on users table. Take portal offline for patching, rotate DB credentials."
+  },
+  {
+    "id": "INC-1229",
+    "title": "Supply-chain compromise via CI/CD pipeline dependency",
+    "severity": "Critical",
+    "mitre": "T1195.002, T1554",
+    "assets": "GitLab CI runner, build artifact registry, production containers",
+    "iocs": [
+      "Malicious postinstall script in updated npm package",
+      "Outbound beacon from build runner to pastebin-mirror[.]io",
+      "Modified build hash mismatch against signed baseline"
+    ],
+    "notes": "Detected via SBOM diff during routine audit, not real-time alerting. Need to determine blast radius across all services using the dependency and rotate CI secrets."
+  },
+  {
+    "id": "INC-1241",
+    "title": "Kubernetes cluster privilege escalation",
+    "severity": "High",
+    "mitre": "T1611, T1548",
+    "assets": "prod-k8s-cluster-02, namespace payments",
+    "iocs": [
+      "Pod created with hostPID: true and privileged: true",
+      "kubectl exec from unrecognized service account token",
+      "Attempt to read /var/run/secrets/kubernetes.io from host"
+    ],
+    "notes": "Misconfigured RBAC allowed default service account to create privileged pods. No confirmed host compromise yet. Recommend policy enforcement (OPA/Gatekeeper) and audit log review."
+  },
+  {
+    "id": "INC-1256",
+    "title": "Volumetric DDoS against public API gateway",
+    "severity": "Medium",
+    "mitre": "T1498.001",
+    "assets": "api.corp.example, edge CDN, gateway cluster",
+    "iocs": [
+      "Peak 42 Gbps UDP reflection traffic",
+      "Source IPs spoofed, amplification via open DNS resolvers",
+      "30-minute partial service degradation"
+    ],
+    "notes": "Mitigated via upstream scrubbing service. No data impact. Post-incident review of rate-limiting and CDN failover thresholds recommended."
+  }
+]

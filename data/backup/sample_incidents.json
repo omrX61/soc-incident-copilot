@@ -1,0 +1,41 @@
+[
+  {
+    "id": "INC-1042",
+    "title": "VIP mailbox AiTM phishing",
+    "severity": "High",
+    "mitre": "T1566.002, T1078",
+    "assets": "exec-assistant@corp.example, Entra ID tenant",
+    "iocs": [
+      "hxxps://login-microsoftonline-secure[.]com",
+      "ASN 14061 session after click",
+      "Inbox rule: 'If from CFO then delete'"
+    ],
+    "notes": "User clicked a DocuSign lure. Risk detection: unfamiliar properties + anonymous IP. Need token revoke and mailbox-rule hunt."
+  },
+  {
+    "id": "INC-1108",
+    "title": "Endpoint encryption on FILESRV01",
+    "severity": "Critical",
+    "mitre": "T1486, T1021.001, T1078",
+    "assets": "FILESRV01, jump host ADM-17, domain account svc-backup",
+    "iocs": [
+      "vssadmin delete shadows",
+      "ransom note README_FOR_DECRYPT.txt",
+      "RDP Type 10 from 10.20.5.17"
+    ],
+    "notes": "Mass file rename on finance share. Backup job failed 40 minutes earlier. Patient zero still unknown."
+  },
+  {
+    "id": "INC-0981",
+    "title": "PowerShell cradle from Excel add-in",
+    "severity": "Medium",
+    "mitre": "T1566.001, T1059.001, T1071.001",
+    "assets": "WS-FIN-014, user j.hale",
+    "iocs": [
+      "invoice_q3.xlsm",
+      "SHA256: sample-not-for-production",
+      "beacon to updates-cdn-check[.]net"
+    ],
+    "notes": "EDR prevented full payload. Need org-wide hash hunt and mail quarantine."
+  }
+]

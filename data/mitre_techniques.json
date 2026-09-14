@@ -1,0 +1,187 @@
+[
+  {
+    "id": "T1566.001",
+    "name": "Phishing: Spearphishing Attachment",
+    "tactic": "Initial Access",
+    "platforms": ["Windows", "macOS", "Linux", "Office 365"],
+    "description": "Adversaries send a targeted message with a malicious attachment to gain execution or harvest credentials. Attachments often include Office macros, ISO/LNK loaders, or credential-stealing HTML.",
+    "detection": "Correlate mail gateway detonations, sandbox verdicts, endpoint process ancestry from Outlook/browser, and newly created persistence shortly after open events.",
+    "soc_response": "Quarantine the message org-wide, disable the mailbox forwarding rules, isolate endpoints that opened the attachment, reset credentials for users who submitted passwords, and hunt for related payloads by hash and parent/child process.",
+    "observables": [
+      "Suspicious attachment hash or filename (invoice.iso, statement.docm)",
+      "Outlook spawning WINWORD/EXCEL then cmd.exe, wscript, or powershell.exe",
+      "Macro execution or Mark-of-the-Web bypass",
+      "Impossible travel or MFA fatigue immediately after the email"
+    ],
+    "containment": "Block sender domain and attachment hash at the mail gateway. Isolate affected workstations. Do not forward the sample via email; use the malware detonation pipeline."
+  },
+  {
+    "id": "T1566.002",
+    "name": "Phishing: Spearphishing Link",
+    "tactic": "Initial Access",
+    "platforms": ["Windows", "macOS", "SaaS", "Identity"],
+    "description": "Adversaries lure users to a credential harvest or malware download site. AiTM kits proxy Microsoft 365 or Okta logons to steal session cookies.",
+    "detection": "URL rewrite logs, proxy categories, identity protection 'unfamiliar properties', OAuth consent grants, and token replay from rare ASNs.",
+    "soc_response": "Revoke refresh tokens, force MFA re-registration if AiTM is confirmed, disable risky inbox rules, and search for the same URL/campaign across the tenant.",
+    "observables": [
+      "Punycode or lookalike IdP hostname",
+      "User agent mismatch after successful auth",
+      "New inbox rule: hide from, forward to external",
+      "Session from hosting ASN minutes after a click"
+    ],
+    "containment": "Block URL at secure web gateway and email. Revoke sessions. Preserve mailbox audit and Entra/Okta sign-in logs."
+  },
+  {
+    "id": "T1078",
+    "name": "Valid Accounts",
+    "tactic": "Defense Evasion / Persistence / Privilege Escalation / Initial Access",
+    "platforms": ["Windows", "Linux", "Identity", "Cloud"],
+    "description": "Adversaries use legitimate credentials rather than malware to blend into normal authentication. Common after phishing, infostealers, or password spraying.",
+    "detection": "Impossible travel, atypical protocol (legacy auth), privileged group changes, and access to high-value mailboxes or cloud resources from new devices.",
+    "soc_response": "Disable or reset the account, revoke tokens, review group membership deltas, and hunt for mailbox rules, app consents, and lateral authentication.",
+    "observables": [
+      "Legacy SMTP/IMAP auth success",
+      "New device registration",
+      "Privileged role assignment",
+      "Access to finance or VIP mailboxes"
+    ],
+    "containment": "Disable account, revoke sessions, rotate secrets for any service accounts reused, and block source IP/ASN if still active."
+  },
+  {
+    "id": "T1110.003",
+    "name": "Brute Force: Password Spraying",
+    "tactic": "Credential Access",
+    "platforms": ["Identity", "Windows", "SaaS"],
+    "description": "A small set of common passwords is tried against many accounts to avoid lockouts. Often precedes valid-account abuse.",
+    "detection": "Spike in failures across many users from one ASN, followed by a small number of successes. Smart lockout telemetry and IdP risk events.",
+    "soc_response": "Block source IPs, enable or tighten lockout and MFA, reset successfully guessed accounts, and check whether any mailbox or VPN sessions were established.",
+    "observables": [
+      "High failure rate, low unique passwords",
+      "Success after spray against service or dormant accounts",
+      "VPN or RDP from the same source"
+    ],
+    "containment": "Firewall/IdP block on source. Reset compromised accounts. Disable legacy authentication."
+  },
+  {
+    "id": "T1059.001",
+    "name": "Command and Scripting Interpreter: PowerShell",
+    "tactic": "Execution",
+    "platforms": ["Windows"],
+    "description": "Adversaries use PowerShell for discovery, credential access, download cradles, and in-memory loaders. Encoded commands and bypasses are common.",
+    "detection": "Script block logging, AMSI events, encoded CommandLine (-enc), download cradles (IEX, DownloadString), and unusual parent processes.",
+    "soc_response": "Collect ScriptBlock and 4104/4103 events, dump the process command line, isolate the host if C2 is suspected, and hunt the same encoded blob estate-wide.",
+    "observables": [
+      "powershell.exe -nop -w hidden -enc",
+      "IEX (New-Object Net.WebClient).DownloadString",
+      "Office or browser as parent of powershell.exe"
+    ],
+    "containment": "Isolate endpoint, kill offending process tree, block the download URL/hash, preserve Memory/EDR timeline."
+  },
+  {
+    "id": "T1021.001",
+    "name": "Remote Services: RDP",
+    "tactic": "Lateral Movement",
+    "platforms": ["Windows"],
+    "description": "Stolen credentials are used to move via Remote Desktop. Attackers may enable RDP, add users to Remote Desktop Users, or hijack existing sessions.",
+    "detection": "4624 type 10 from unusual sources, 4625 bursts, new local admins, and RDP from workstations that never previously sourced interactive logons.",
+    "soc_response": "Disable the compromised account, isolate source and destination hosts, review the RDP session for staging directories, and check for scheduled tasks created during the session.",
+    "observables": [
+      "4624 Logon Type 10",
+      "tsclient mapped drives",
+      "New local administrator",
+      "RDP from a user workstation to a server jumphost reverse path"
+    ],
+    "containment": "Disable RDP from the source, reset credentials, revoke cached credentials, capture disk/EDR evidence before rebuild."
+  },
+  {
+    "id": "T1071.001",
+    "name": "Application Layer Protocol: Web Protocols",
+    "tactic": "Command and Control",
+    "platforms": ["Windows", "Linux", "macOS"],
+    "description": "C2 over HTTP/HTTPS blends with normal browsing. Beacons may use rare JA3/JA4, long-lived connections, or domain fronting.",
+    "detection": "Beaconing intervals, rare domains, newly registered domains, TLS to non-standard SNI, and EDR network events from unsigned binaries.",
+    "soc_response": "Sinkhole or block the domain/IP, isolate the beaconing host, capture the binary and config, and hunt identical mutex/hash/C2 across the fleet.",
+    "observables": [
+      "Periodic HTTPS to a newly registered domain",
+      "Unsigned process making web requests",
+      "DNS to DGA-like labels"
+    ],
+    "containment": "Network isolate. Block IOC at DNS/proxy/firewall. Do not power off if memory analysis is required; use EDR containment."
+  },
+  {
+    "id": "T1486",
+    "name": "Data Encrypted for Impact",
+    "tactic": "Impact",
+    "platforms": ["Windows", "Linux", "ESXi"],
+    "description": "Ransomware encrypts files and may destroy backups, inhibit recovery, and drop ransom notes. Often follows privilege escalation and backup tampering.",
+    "detection": "Mass file rename/entropy, VSS deletion (vssadmin, wbadmin, wmic shadowcopy), ransom notes, and simultaneous encryption across shares.",
+    "soc_response": "Isolate affected segments, preserve a few encrypted samples and notes, identify patient zero and backup integrity, and engage IR leadership before any payment discussion.",
+    "observables": [
+      "vssadmin delete shadows /all /quiet",
+      "Ransom note file names",
+      "Rapid file extension changes on file servers",
+      "Admin shares accessed then encryption"
+    ],
+    "containment": "Take encrypted systems off the network. Disable the staging account. Snapshot clean backups offline. Do not power-cycle all hosts blindly."
+  },
+  {
+    "id": "T1048",
+    "name": "Exfiltration Over Alternative Protocol",
+    "tactic": "Exfiltration",
+    "platforms": ["Windows", "Linux", "Cloud"],
+    "description": "Data leaves over DNS, FTP, ICMP, or cloud storage APIs instead of the primary C2 channel. Often paired with archive and encrypt staging.",
+    "detection": "Large outbound transfers, DNS TXT spikes, unsanctioned cloud sync, and archive creation in temp followed by network egress.",
+    "soc_response": "Block the egress channel, identify the staged archive, estimate data types involved, and notify legal/privacy if regulated data may have left.",
+    "observables": [
+      "7z/rar in %TEMP% then outbound transfer",
+      "Unusual S3/Blob PUT volume",
+      "DNS tunneling patterns"
+    ],
+    "containment": "Egress block on the host and destination. Preserve staging directories. Capture packet or proxy logs covering the transfer window."
+  },
+  {
+    "id": "T1190",
+    "name": "Exploit Public-Facing Application",
+    "tactic": "Initial Access",
+    "platforms": ["Windows", "Linux", "Network", "Containers"],
+    "description": "Internet-facing services (VPN, web apps, file transfer) are exploited for unauthenticated RCE or auth bypass, frequently used as ransomware footholds.",
+    "detection": "WAF/IDS signatures, anomalous request paths, webshell drops under web roots, and new child processes of w3wp/nginx/httpd.",
+    "soc_response": "Take the vulnerable service offline or patch/WAF virtual-patch, hunt webshells and persistence, rotate secrets stored on the host, and review downstream lateral movement.",
+    "observables": [
+      "Web shell files in /uploads or inetpub",
+      "w3wp.exe spawning cmd.exe",
+      "Scanner user-agents hitting a new CVE path"
+    ],
+    "containment": "Block exploit path at WAF/VPN. Isolate the server. Preserve web logs and the web root before cleanup."
+  },
+  {
+    "id": "T1053.005",
+    "name": "Scheduled Task/Job: Scheduled Task",
+    "tactic": "Persistence / Privilege Escalation / Execution",
+    "platforms": ["Windows"],
+    "description": "Adversaries create or modify scheduled tasks to maintain access, often under SYSTEM or a privileged user.",
+    "detection": "Event 4698/4702, schtasks.exe, Task Scheduler operational log, and tasks pointing to user-writable paths.",
+    "soc_response": "Export the task XML, hash the action binary, disable the task, and hunt the same task name across endpoints.",
+    "observables": [
+      "schtasks /create /ru SYSTEM",
+      "Task action in %PUBLIC% or %TEMP%",
+      "Recently created task with random name"
+    ],
+    "containment": "Disable the task, isolate if C2 is confirmed, collect the action binary and XML."
+  },
+  {
+    "id": "T1003.001",
+    "name": "OS Credential Dumping: LSASS Memory",
+    "tactic": "Credential Access",
+    "platforms": ["Windows"],
+    "description": "Adversaries dump LSASS to recover credentials for lateral movement. Tools include Mimikatz-style loaders, comsvcs MiniDump, and direct syscalls.",
+    "detection": "LSASS handle access (Sysmon 10), MiniDump from unusual processes, Credential Guard bypass attempts, and subsequent authentications with stolen hashes.",
+    "soc_response": "Isolate the host, rotate credentials for accounts that authenticated to it, assume NTLM hashes are burned, and hunt for follow-on PtH/PtT.",
+    "observables": [
+      "rundll32 comsvcs.dll MiniDump",
+      "procdump -ma lsass",
+      "Unusual process opening lsass.exe"
+    ],
+    "containment": "Isolate. Reset affected accounts including krbtgt if domain-wide dump is suspected (coordinate with AD owners). Enable Credential Guard where missing."
+  }
+]

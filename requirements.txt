@@ -1,0 +1,5 @@
+streamlit>=1.38.0
+pypdf>=5.1.0
+openai>=1.51.0
+foundry-local-sdk>=1.0.0
+pytest>=8.3.0
